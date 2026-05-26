@@ -13,6 +13,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedParentRouteImport } from './routes/_authenticated.parent'
 import { Route as AuthenticatedLearnRouteImport } from './routes/_authenticated.learn'
 import { Route as AuthenticatedBadgesRouteImport } from './routes/_authenticated.badges'
 import { Route as AuthenticatedQuizLessonIdRouteImport } from './routes/_authenticated.quiz.$lessonId'
@@ -36,6 +37,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedParentRoute = AuthenticatedParentRouteImport.update({
+  id: '/parent',
+  path: '/parent',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedLearnRoute = AuthenticatedLearnRouteImport.update({
   id: '/learn',
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/badges': typeof AuthenticatedBadgesRoute
   '/learn': typeof AuthenticatedLearnRouteWithChildren
+  '/parent': typeof AuthenticatedParentRoute
   '/learn/$lessonId': typeof AuthenticatedLearnLessonIdRoute
   '/quiz/$lessonId': typeof AuthenticatedQuizLessonIdRoute
 }
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/badges': typeof AuthenticatedBadgesRoute
   '/learn': typeof AuthenticatedLearnRouteWithChildren
+  '/parent': typeof AuthenticatedParentRoute
   '/learn/$lessonId': typeof AuthenticatedLearnLessonIdRoute
   '/quiz/$lessonId': typeof AuthenticatedQuizLessonIdRoute
 }
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_authenticated/badges': typeof AuthenticatedBadgesRoute
   '/_authenticated/learn': typeof AuthenticatedLearnRouteWithChildren
+  '/_authenticated/parent': typeof AuthenticatedParentRoute
   '/_authenticated/learn/$lessonId': typeof AuthenticatedLearnLessonIdRoute
   '/_authenticated/quiz/$lessonId': typeof AuthenticatedQuizLessonIdRoute
 }
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/badges'
     | '/learn'
+    | '/parent'
     | '/learn/$lessonId'
     | '/quiz/$lessonId'
   fileRoutesByTo: FileRoutesByTo
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/badges'
     | '/learn'
+    | '/parent'
     | '/learn/$lessonId'
     | '/quiz/$lessonId'
   id:
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_authenticated/badges'
     | '/_authenticated/learn'
+    | '/_authenticated/parent'
     | '/_authenticated/learn/$lessonId'
     | '/_authenticated/quiz/$lessonId'
   fileRoutesById: FileRoutesById
@@ -156,6 +168,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/parent': {
+      id: '/_authenticated/parent'
+      path: '/parent'
+      fullPath: '/parent'
+      preLoaderRoute: typeof AuthenticatedParentRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/learn': {
       id: '/_authenticated/learn'
@@ -202,12 +221,14 @@ const AuthenticatedLearnRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedBadgesRoute: typeof AuthenticatedBadgesRoute
   AuthenticatedLearnRoute: typeof AuthenticatedLearnRouteWithChildren
+  AuthenticatedParentRoute: typeof AuthenticatedParentRoute
   AuthenticatedQuizLessonIdRoute: typeof AuthenticatedQuizLessonIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedBadgesRoute: AuthenticatedBadgesRoute,
   AuthenticatedLearnRoute: AuthenticatedLearnRouteWithChildren,
+  AuthenticatedParentRoute: AuthenticatedParentRoute,
   AuthenticatedQuizLessonIdRoute: AuthenticatedQuizLessonIdRoute,
 }
 
