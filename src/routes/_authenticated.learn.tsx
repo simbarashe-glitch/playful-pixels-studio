@@ -85,7 +85,15 @@ function LearnPage() {
             );
           })}
         </div>
+
+        {profile?.role === "kid" && profile.pairing_code && (
+          <div className="mt-10 kid-card p-5 text-center bg-sunshine/20">
+            <p className="text-sm text-muted-foreground">Show this code to a parent so they can follow your progress:</p>
+            <p className="mt-1 text-2xl font-bold font-mono tracking-widest">{profile.pairing_code}</p>
+          </div>
+        )}
       </main>
     </>
   );
 }
+
