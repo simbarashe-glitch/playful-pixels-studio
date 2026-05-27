@@ -1,9 +1,15 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
+import { useState } from "react";
+import { toast } from "sonner";
 import { TopBar } from "@/components/TopBar";
 import { MascotBubble } from "@/components/MascotBubble";
 import { BlockCard } from "@/components/BlockCard";
+import { SpriteStage } from "@/components/SpriteStage";
 import { getLesson, lessonAccentClass, lessons } from "@/data/curriculum";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/_authenticated/learn/$lessonId")({
   head: ({ params }) => {
@@ -25,12 +31,78 @@ export const Route = createFileRoute("/_authenticated/learn/$lessonId")({
   ),
 });
 
+// Costume sets per lesson — used by the interactive stage
+const COSTUMES: Record<string, string[]> = {
+  intro: ["🐱", "🐶"],
+  sprites: ["🐱", "🦄", "🐼", "🦊", "🐸"],
+  motion: ["🐱"],
+  looks: ["🐱", "😺", "😻", "🙀"],
+  sound: ["🐱"],
+  events: ["🐱"],
+  control: ["🐱"],
+  sensing: ["🐱"],
+  "operators-variables": ["🐱"],
+};
+
+// Fallback blocks for lessons that don't declare any, so the stage is always playable
+const FALLBACK_BLOCKS: Record<string, BlocksFallback> = {
+  intro: [
+    { label: "move 10 steps", description: "Slide forward", color: "motion" },
+    { label: "say Hello! for 2 secs", description: "Speech bubble", color: "looks" },
+    { label: "when 🚩 clicked", description: "Run a demo", color: "events" },
+  ],
+};
+type BlocksFallback = { label: string; description: string; color: import("@/data/curriculum").BlockCard["color"] }[];
+
 function LessonPage() {
   const { lessonId } = Route.useParams();
   const lesson = getLesson(lessonId);
   if (!lesson) throw notFound();
 
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const [savingDone, setSavingDone] = useState(false);
+
+  const { data: progress } = useQuery({
+    queryKey: ["lesson-progress", user?.id, lesson.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("lesson_progress")
+        .select("completed, stars")
+        .eq("user_id", user!.id)
+        .eq("lesson_id", lesson.id)
+        .maybeSingle();
+      return data;
+    },
+  });
+
   const next = lessons.find((l) => l.order === lesson.order + 1);
+  const playBlocks = lesson.blocks?.length ? lesson.blocks : FALLBACK_BLOCKS[lesson.id] ?? [];
+
+  const markLearned = async () => {
+    if (!user) return;
+    setSavingDone(true);
+    const { error } = await supabase.from("lesson_progress").upsert(
+      {
+        user_id: user.id,
+        lesson_id: lesson.id,
+        completed: true,
+        completed_at: new Date().toISOString(),
+        stars: Math.max(progress?.stars ?? 0, 1),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,lesson_id" },
+    );
+    setSavingDone(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Great job! Lesson marked as learned 🎉");
+    qc.invalidateQueries({ queryKey: ["lesson-progress"] });
+    qc.invalidateQueries({ queryKey: ["progress"] });
+  };
 
   return (
     <>
@@ -47,7 +119,18 @@ function LessonPage() {
           <div className="text-7xl mt-3">{lesson.emoji}</div>
           <h1 className="text-4xl font-extrabold mt-2">{lesson.title}</h1>
           <p className="text-lg text-muted-foreground mt-2">{lesson.tagline}</p>
+          {progress?.completed && (
+            <p className="mt-3 inline-block px-3 py-1 rounded-xl bg-mint font-bold text-sm">
+              ✓ You've learned this!
+            </p>
+          )}
         </header>
+
+        {playBlocks.length > 0 && (
+          <section className="mt-8">
+            <SpriteStage blocks={playBlocks} costumes={COSTUMES[lesson.id] ?? ["🐱"]} />
+          </section>
+        )}
 
         <section className="mt-8 space-y-5">
           {lesson.concepts.map((c, i) => (
@@ -78,17 +161,26 @@ function LessonPage() {
 
         <section className="mt-10 kid-card p-6 text-center bg-sunshine/30">
           <div className="text-4xl">💡</div>
-          <h3 className="text-xl font-bold mt-2">Try it in Scratch!</h3>
+          <h3 className="text-xl font-bold mt-2">Ready to show what you know?</h3>
           <p className="text-sm mt-1 text-muted-foreground">
-            Open Scratch and play with what you just learned. When you're ready, take the quiz!
+            Mark this lesson as learned, then try the quiz to earn stars!
           </p>
-          <Link
-            to="/quiz/$lessonId"
-            params={{ lessonId: lesson.id }}
-            className="inline-flex mt-5 h-12 items-center rounded-2xl bg-primary px-6 font-bold text-primary-foreground chunky-shadow hover:scale-105 transition"
-          >
-            Take the quiz →
-          </Link>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={markLearned}
+              disabled={savingDone}
+              className="h-12 inline-flex items-center rounded-2xl bg-mint px-5 font-bold chunky-shadow hover:scale-105 transition disabled:opacity-60"
+            >
+              {progress?.completed ? "✓ Learned" : savingDone ? "Saving…" : "✓ Mark as learned"}
+            </button>
+            <Link
+              to="/quiz/$lessonId"
+              params={{ lessonId: lesson.id }}
+              className="h-12 inline-flex items-center rounded-2xl bg-primary px-6 font-bold text-primary-foreground chunky-shadow hover:scale-105 transition"
+            >
+              Take the quiz →
+            </Link>
+          </div>
         </section>
 
         {next && (
