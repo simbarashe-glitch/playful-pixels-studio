@@ -14,7 +14,7 @@ const toKidEmail = (username: string) =>
   `${username.trim().toLowerCase().replace(/[^a-z0-9]/g, "")}@${KID_EMAIL_DOMAIN}`;
 
 function LoginPage() {
-  const { user, profile } = useAuth();
+  const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const [role, setRole] = useState<"kid" | "parent">("kid");
   const [identifier, setIdentifier] = useState("");
@@ -22,10 +22,11 @@ function LoginPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    if (loading) return;
     if (user && profile) {
-      navigate({ to: profile.role === "parent" ? "/parent" : "/learn" });
+      navigate({ to: profile.role === "parent" ? "/parent" : "/learn", replace: true });
     }
-  }, [user, profile, navigate]);
+  }, [user, profile, loading, navigate]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
