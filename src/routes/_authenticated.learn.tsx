@@ -34,9 +34,9 @@ function LearnPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("quiz_attempts")
-        .select("lesson_id, score, total, created_at")
+        .select("lesson_id, score, total, attempted_at")
         .eq("user_id", user!.id)
-        .order("created_at", { ascending: false });
+        .order("attempted_at", { ascending: false });
       return data ?? [];
     },
   });
@@ -57,7 +57,7 @@ function LearnPage() {
   }
 
   // streak = consecutive days with activity
-  const streak = computeStreak(progress.map((p) => p.updated_at).concat(attempts.map((a) => a.created_at)));
+  const streak = computeStreak(progress.map((p) => p.updated_at).concat(attempts.map((a) => a.attempted_at)));
 
   return (
     <>
