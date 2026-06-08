@@ -162,9 +162,39 @@
 
 @layer components {
   .kid-card {
-    @apply rounded-3xl bg-card shadow-[0_8px_0_0_color-mix(in_oklch,var(--primary)_25%,transparent)] border-2 border-border;
+    @apply rounded-3xl bg-card border-2 border-border;
+    box-shadow: 0 8px 0 0 color-mix(in oklch, var(--primary) 18%, transparent),
+                0 20px 40px -20px color-mix(in oklch, var(--primary) 35%, transparent);
   }
   .chunky-shadow {
     box-shadow: 0 6px 0 0 color-mix(in oklch, var(--foreground) 12%, transparent);
   }
+  .gradient-text {
+    background: linear-gradient(135deg, var(--sky), var(--grape) 50%, var(--coral));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .gradient-primary {
+    background: linear-gradient(135deg, var(--sky), var(--grape));
+  }
+  .blob {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(40px);
+    opacity: 0.35;
+    pointer-events: none;
+    animation: blob-float 14s ease-in-out infinite;
+  }
 }
+
+@keyframes blob-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(20px, -20px) scale(1.08); }
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+.animate-wiggle { animation: wiggle 1.2s ease-in-out infinite; }
